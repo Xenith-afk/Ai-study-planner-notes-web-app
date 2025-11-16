@@ -1,34 +1,43 @@
 import { Card } from "@/components/ui/card";
 import { BookOpen, Target, TrendingUp, Clock } from "lucide-react";
 
-export const StatsOverview = () => {
+interface StatsOverviewProps {
+  totalNotes: number;
+  totalPlans: number;
+  completedTasks: number;
+  totalTasks: number;
+}
+
+export const StatsOverview = ({ totalNotes, totalPlans, completedTasks, totalTasks }: StatsOverviewProps) => {
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
   const stats = [
     {
       icon: BookOpen,
       label: "Total Notes",
-      value: "24",
-      change: "+3 this week",
+      value: totalNotes.toString(),
+      change: "Study materials",
       color: "text-primary",
     },
     {
       icon: Target,
-      label: "Active Goals",
-      value: "5",
-      change: "2 completed",
+      label: "Study Plans",
+      value: totalPlans.toString(),
+      change: "Active plans",
       color: "text-accent",
     },
     {
       icon: TrendingUp,
-      label: "Study Streak",
-      value: "12 days",
-      change: "Keep it up!",
+      label: "Completion",
+      value: `${completionRate}%`,
+      change: `${completedTasks}/${totalTasks} tasks`,
       color: "text-success",
     },
     {
       icon: Clock,
-      label: "Study Time",
-      value: "8.5h",
-      change: "This week",
+      label: "Total Tasks",
+      value: totalTasks.toString(),
+      change: `${totalTasks - completedTasks} remaining`,
       color: "text-warning",
     },
   ];
