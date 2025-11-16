@@ -1,15 +1,74 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Calendar, Target, Sparkles, Plus, Search } from "lucide-react";
+import { BookOpen, Calendar, Target, Sparkles, Plus, Search, LogOut } from "lucide-react";
 import { StudyPlanCard } from "@/components/StudyPlanCard";
 import { NoteCard } from "@/components/NoteCard";
 import { StatsOverview } from "@/components/StatsOverview";
 import { CreateNoteDialog } from "@/components/CreateNoteDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 const Index = () => {
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
   const [isCreateNoteOpen, setIsCreateNoteOpen] = useState(false);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [studyPlans, setStudyPlans] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const fetchData = async () => {
+    try {
+      const [notesRes, plansRes] = await Promise.all([
+        supabase.from("notes").select("*").order("created_at", { ascending: false }).limit(6),
+        supabase.from("study_plans").select("*, study_plan_tasks(*)").order("created_at", { ascending: false }),
+      ]);
+
+      if (notesRes.error) throw notesRes.error;
+      if (plansRes.error) throw plansRes.error;
+
+      setNotes(notesRes.data || []);
+      setStudyPlans(plansRes.data || []);
+    } catch (error: any) {
+      toast.error("Failed to load data");
+      console.error(error);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const handleNoteCreated = () => {
+    fetchData();
+  };
+
+  if (loading || loadingData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <BookOpen className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
@@ -40,6 +99,15 @@ const Index = () => {
                 <Plus className="w-4 h-4" />
                 New Note
               </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="rounded-full"
+                onClick={signOut}
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -48,7 +116,12 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Stats Overview */}
-        <StatsOverview />
+        <StatsOverview 
+          totalNotes={notes.length}
+          totalPlans={studyPlans.length}
+          completedTasks={studyPlans.reduce((acc, plan) => acc + (plan.study_plan_tasks?.filter((t: any) => t.completed).length || 0), 0)}
+          totalTasks={studyPlans.reduce((acc, plan) => acc + (plan.study_plan_tasks?.length || 0), 0)}
+        />
 
         {/* Tabs Navigation */}
         <Tabs defaultValue="overview" className="mt-8">
@@ -91,38 +164,48 @@ const Index = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Recent Notes</h3>
                 <div className="space-y-3">
-                  <NoteCard
-                    title="Introduction to React Hooks"
-                    excerpt="Understanding useState, useEffect, and custom hooks..."
-                    subject="Computer Science"
-                    date="2 hours ago"
-                  />
-                  <NoteCard
-                    title="World War II Timeline"
-                    excerpt="Key events from 1939 to 1945..."
-                    subject="History"
-                    date="Yesterday"
-                  />
+                  {notes.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">
+                      No notes yet. Create your first note!
+                    </p>
+                  ) : (
+                    notes.slice(0, 2).map((note) => (
+                      <NoteCard
+                        key={note.id}
+                        title={note.title}
+                        excerpt={note.ai_summary || note.content?.substring(0, 100) || ""}
+                        subject={note.subject}
+                        date={formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
 
               <div>
                 <h3 className="text-lg font-semibold mb-4">Active Study Plans</h3>
                 <div className="space-y-3">
-                  <StudyPlanCard
-                    title="Final Exam Preparation"
-                    progress={65}
-                    dueDate="In 5 days"
-                    tasksCompleted={13}
-                    totalTasks={20}
-                  />
-                  <StudyPlanCard
-                    title="JavaScript Mastery"
-                    progress={40}
-                    dueDate="In 2 weeks"
-                    tasksCompleted={8}
-                    totalTasks={20}
-                  />
+                  {studyPlans.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">
+                      No study plans yet. Create your first plan!
+                    </p>
+                  ) : (
+                    studyPlans.slice(0, 2).map((plan) => {
+                      const tasks = plan.study_plan_tasks || [];
+                      const completed = tasks.filter((t: any) => t.completed).length;
+                      const progress = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+                      return (
+                        <StudyPlanCard
+                          key={plan.id}
+                          title={plan.title}
+                          progress={progress}
+                          dueDate={plan.due_date ? formatDistanceToNow(new Date(plan.due_date), { addSuffix: true }) : "No due date"}
+                          tasksCompleted={completed}
+                          totalTasks={tasks.length}
+                        />
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -135,24 +218,21 @@ const Index = () => {
               <Button variant="outline" size="sm">Filter</Button>
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <NoteCard
-                title="Introduction to React Hooks"
-                excerpt="Understanding useState, useEffect, and custom hooks..."
-                subject="Computer Science"
-                date="2 hours ago"
-              />
-              <NoteCard
-                title="World War II Timeline"
-                excerpt="Key events from 1939 to 1945..."
-                subject="History"
-                date="Yesterday"
-              />
-              <NoteCard
-                title="Photosynthesis Process"
-                excerpt="How plants convert light energy into chemical energy..."
-                subject="Biology"
-                date="2 days ago"
-              />
+              {notes.length === 0 ? (
+                <p className="text-muted-foreground col-span-full text-center py-8">
+                  No notes yet. Create your first note to get started!
+                </p>
+              ) : (
+                notes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    title={note.title}
+                    excerpt={note.ai_summary || note.content?.substring(0, 150) || ""}
+                    subject={note.subject}
+                    date={formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+                  />
+                ))
+              )}
             </div>
           </TabsContent>
 
@@ -166,33 +246,33 @@ const Index = () => {
               </Button>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <StudyPlanCard
-                title="Final Exam Preparation"
-                progress={65}
-                dueDate="In 5 days"
-                tasksCompleted={13}
-                totalTasks={20}
-              />
-              <StudyPlanCard
-                title="JavaScript Mastery"
-                progress={40}
-                dueDate="In 2 weeks"
-                tasksCompleted={8}
-                totalTasks={20}
-              />
-              <StudyPlanCard
-                title="Chemistry Fundamentals"
-                progress={85}
-                dueDate="In 3 days"
-                tasksCompleted={17}
-                totalTasks={20}
-              />
+              {studyPlans.length === 0 ? (
+                <p className="text-muted-foreground col-span-full text-center py-8">
+                  No study plans yet. Create your first plan to organize your learning!
+                </p>
+              ) : (
+                studyPlans.map((plan) => {
+                  const tasks = plan.study_plan_tasks || [];
+                  const completed = tasks.filter((t: any) => t.completed).length;
+                  const progress = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+                  return (
+                    <StudyPlanCard
+                      key={plan.id}
+                      title={plan.title}
+                      progress={progress}
+                      dueDate={plan.due_date ? formatDistanceToNow(new Date(plan.due_date), { addSuffix: true }) : "No due date"}
+                      tasksCompleted={completed}
+                      totalTasks={tasks.length}
+                    />
+                  );
+                })
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </main>
 
-      <CreateNoteDialog open={isCreateNoteOpen} onOpenChange={setIsCreateNoteOpen} />
+      <CreateNoteDialog open={isCreateNoteOpen} onOpenChange={setIsCreateNoteOpen} onNoteCreated={handleNoteCreated} />
     </div>
   );
 };

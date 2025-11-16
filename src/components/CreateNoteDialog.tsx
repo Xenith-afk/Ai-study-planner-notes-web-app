@@ -1,56 +1,79 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface CreateNoteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onNoteCreated?: () => void;
 }
 
-export const CreateNoteDialog = ({ open, onOpenChange }: CreateNoteDialogProps) => {
+export const CreateNoteDialog = ({ open, onOpenChange, onNoteCreated }: CreateNoteDialogProps) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [subject, setSubject] = useState("");
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
 
-  const handleCreate = () => {
-    if (!title || !content || !subject) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all fields",
-        variant: "destructive",
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      let aiSummary = null;
+      
+      if (content) {
+        setGeneratingSummary(true);
+        try {
+          const { data: summaryData, error: summaryError } = await supabase.functions.invoke("generate-summary", {
+            body: { content },
+          });
+
+          if (summaryError) {
+            console.error("Summary generation failed:", summaryError);
+            toast.error("Note saved, but AI summary failed to generate");
+          } else {
+            aiSummary = summaryData.summary;
+          }
+        } catch (error) {
+          console.error("Summary error:", error);
+        } finally {
+          setGeneratingSummary(false);
+        }
+      }
+
+      const { error } = await supabase.from("notes").insert({
+        user_id: user.id,
+        title,
+        content,
+        subject,
+        ai_summary: aiSummary,
       });
-      return;
-    }
 
-    toast({
-      title: "Note created!",
-      description: "Your note has been saved successfully",
-    });
-    
-    // Reset form
-    setTitle("");
-    setContent("");
-    setSubject("");
-    onOpenChange(false);
+      if (error) throw error;
+
+      toast.success("Note created successfully!");
+      onOpenChange(false);
+      setTitle("");
+      setContent("");
+      setSubject("");
+      onNoteCreated?.();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create note");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,11 +82,11 @@ export const CreateNoteDialog = ({ open, onOpenChange }: CreateNoteDialogProps) 
         <DialogHeader>
           <DialogTitle>Create New Note</DialogTitle>
           <DialogDescription>
-            Add a new note to your study collection. AI features coming soon!
+            Add a new note to your study collection with AI-powered summaries.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -71,24 +94,25 @@ export const CreateNoteDialog = ({ open, onOpenChange }: CreateNoteDialogProps) 
               placeholder="Enter note title..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="subject">Subject</Label>
-            <Select value={subject} onValueChange={setSubject}>
+            <Select value={subject} onValueChange={setSubject} required>
               <SelectTrigger id="subject">
                 <SelectValue placeholder="Select a subject" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="computer-science">Computer Science</SelectItem>
-                <SelectItem value="mathematics">Mathematics</SelectItem>
-                <SelectItem value="physics">Physics</SelectItem>
-                <SelectItem value="chemistry">Chemistry</SelectItem>
-                <SelectItem value="biology">Biology</SelectItem>
-                <SelectItem value="history">History</SelectItem>
-                <SelectItem value="literature">Literature</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="Computer Science">Computer Science</SelectItem>
+                <SelectItem value="Mathematics">Mathematics</SelectItem>
+                <SelectItem value="Physics">Physics</SelectItem>
+                <SelectItem value="Chemistry">Chemistry</SelectItem>
+                <SelectItem value="Biology">Biology</SelectItem>
+                <SelectItem value="History">History</SelectItem>
+                <SelectItem value="Literature">Literature</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -101,6 +125,7 @@ export const CreateNoteDialog = ({ open, onOpenChange }: CreateNoteDialogProps) 
               className="min-h-[200px]"
               value={content}
               onChange={(e) => setContent(e.target.value)}
+              required
             />
           </div>
 
@@ -110,23 +135,31 @@ export const CreateNoteDialog = ({ open, onOpenChange }: CreateNoteDialogProps) 
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium mb-1">AI Features Coming Soon</p>
+                <p className="text-sm font-medium mb-1">AI Summary</p>
                 <p className="text-xs text-muted-foreground">
-                  Auto-summarize, generate study questions, and more with AI assistance.
+                  An AI-powered summary will be automatically generated when you save this note.
                 </p>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+          <Button 
+            type="submit" 
+            className="w-full bg-gradient-to-r from-primary to-accent"
+            disabled={loading || generatingSummary}
+          >
+            {generatingSummary ? (
+              <>
+                <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                Generating AI Summary...
+              </>
+            ) : loading ? (
+              "Creating..."
+            ) : (
+              "Create Note"
+            )}
           </Button>
-          <Button onClick={handleCreate} className="bg-gradient-to-r from-primary to-accent">
-            Create Note
-          </Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
