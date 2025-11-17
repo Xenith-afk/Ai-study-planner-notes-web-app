@@ -1,1 +1,19 @@
 project_id = "qaofcbwqigzkzvphagqp"
+
+[functions.generate-summary]
+verify_jwt = true
+
+[functions.generate-notes-from-pdf]
+verify_jwt = true
+
+[functions.generate-mcqs]
+verify_jwt = true
+
+[functions.generate-flashcards]
+verify_jwt = true
+
+[functions.generate-study-plan]
+verify_jwt = true
+
+[functions.suggest-next-topic]
+verify_jwt = true

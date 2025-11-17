@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Calendar, Target, Sparkles, Plus, Search, LogOut } from "lucide-react";
+import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain } from "lucide-react";
+import { StudyPlanCreator } from "@/components/StudyPlanCreator";
+import { ProgressTracker } from "@/components/ProgressTracker";
+import { FlashcardViewer } from "@/components/FlashcardViewer";
+import { MCQPractice } from "@/components/MCQPractice";
+import { SmartNotesGenerator } from "@/components/SmartNotesGenerator";
 import { StudyPlanCard } from "@/components/StudyPlanCard";
 import { NoteCard } from "@/components/NoteCard";
 import { StatsOverview } from "@/components/StatsOverview";
@@ -88,12 +93,10 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon" className="rounded-full">
-                <Search className="w-4 h-4" />
-              </Button>
+            <div className="flex items-center gap-2">
+              <SmartNotesGenerator onNotesGenerated={fetchData} />
               <Button 
-                className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+                className="gap-2"
                 onClick={() => setIsCreateNoteOpen(true)}
               >
                 <Plus className="w-4 h-4" />
