@@ -14,6 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
+      flashcards: {
+        Row: {
+          answer: string
+          created_at: string | null
+          id: string
+          note_id: string | null
+          question: string
+          topic: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          id?: string
+          note_id?: string | null
+          question: string
+          topic: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          id?: string
+          note_id?: string | null
+          question?: string
+          topic?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcqs: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          explanation: string | null
+          id: string
+          note_id: string | null
+          options: Json | null
+          question: string
+          question_type: string | null
+          topic: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          explanation?: string | null
+          id?: string
+          note_id?: string | null
+          options?: Json | null
+          question: string
+          question_type?: string | null
+          topic: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          explanation?: string | null
+          id?: string
+          note_id?: string | null
+          options?: Json | null
+          question?: string
+          question_type?: string | null
+          topic?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcqs_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           ai_summary: string | null
@@ -21,6 +112,7 @@ export type Database = {
           created_at: string | null
           id: string
           subject: string
+          tags: string[] | null
           title: string
           updated_at: string | null
           user_id: string
@@ -31,6 +123,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           subject: string
+          tags?: string[] | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -41,6 +134,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           subject?: string
+          tags?: string[] | null
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -68,6 +162,78 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      progress_tracker: {
+        Row: {
+          completed: boolean | null
+          confidence_level: number | null
+          created_at: string | null
+          id: string
+          is_weak: boolean | null
+          last_reviewed: string | null
+          subject: string | null
+          topic: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          confidence_level?: number | null
+          created_at?: string | null
+          id?: string
+          is_weak?: boolean | null
+          last_reviewed?: string | null
+          subject?: string | null
+          topic: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          confidence_level?: number | null
+          created_at?: string | null
+          id?: string
+          is_weak?: boolean | null
+          last_reviewed?: string | null
+          subject?: string | null
+          topic?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_goals: {
+        Row: {
+          available_hours_per_day: number | null
+          created_at: string | null
+          id: string
+          syllabus_url: string | null
+          target_date: string | null
+          target_exam: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          available_hours_per_day?: number | null
+          created_at?: string | null
+          id?: string
+          syllabus_url?: string | null
+          target_date?: string | null
+          target_exam: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          available_hours_per_day?: number | null
+          created_at?: string | null
+          id?: string
+          syllabus_url?: string | null
+          target_date?: string | null
+          target_exam?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -135,6 +301,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      study_schedule: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          duration_minutes: number | null
+          goal_id: string | null
+          id: string
+          is_weak_topic: boolean | null
+          scheduled_date: string
+          skipped: boolean | null
+          topic: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          goal_id?: string | null
+          id?: string
+          is_weak_topic?: boolean | null
+          scheduled_date: string
+          skipped?: boolean | null
+          topic: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          goal_id?: string | null
+          id?: string
+          is_weak_topic?: boolean | null
+          scheduled_date?: string
+          skipped?: boolean | null
+          topic?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_schedule_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "study_goals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
