@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain } from "lucide-react";
+import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain, Sparkles } from "lucide-react";
 import { StudyPlanCreator } from "@/components/StudyPlanCreator";
 import { ProgressTracker } from "@/components/ProgressTracker";
 import { FlashcardViewer } from "@/components/FlashcardViewer";
@@ -94,13 +94,15 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <SmartNotesGenerator onNotesGenerated={fetchData} />
+              <div className="hidden sm:block">
+                <SmartNotesGenerator onNotesGenerated={fetchData} />
+              </div>
               <Button 
                 className="gap-2"
                 onClick={() => setIsCreateNoteOpen(true)}
               >
                 <Plus className="w-4 h-4" />
-                New Note
+                <span className="hidden sm:inline">New Note</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -128,7 +130,7 @@ const Index = () => {
 
         {/* Tabs Navigation */}
         <Tabs defaultValue="overview" className="mt-8">
-          <TabsList className="grid w-full max-w-md grid-cols-3 mx-auto">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 max-w-4xl mx-auto gap-1">
             <TabsTrigger value="overview" className="gap-2">
               <Target className="w-4 h-4" />
               Overview
@@ -140,6 +142,14 @@ const Index = () => {
             <TabsTrigger value="plans" className="gap-2">
               <Calendar className="w-4 h-4" />
               Plans
+            </TabsTrigger>
+            <TabsTrigger value="progress" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Progress</span>
+            </TabsTrigger>
+            <TabsTrigger value="practice" className="gap-2">
+              <Zap className="w-4 h-4" />
+              <span className="hidden sm:inline">Practice</span>
             </TabsTrigger>
           </TabsList>
 
@@ -243,10 +253,7 @@ const Index = () => {
           <TabsContent value="plans" className="space-y-4 mt-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Study Plans</h3>
-              <Button className="gap-2 bg-gradient-to-r from-primary to-accent">
-                <Plus className="w-4 h-4" />
-                Create Plan
-              </Button>
+              <StudyPlanCreator onPlanCreated={fetchData} />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {studyPlans.length === 0 ? (
@@ -270,6 +277,27 @@ const Index = () => {
                   );
                 })
               )}
+            </div>
+          </TabsContent>
+
+          {/* Progress Tab */}
+          <TabsContent value="progress" className="mt-6">
+            <ProgressTracker />
+          </TabsContent>
+
+          {/* Practice Tab */}
+          <TabsContent value="practice" className="space-y-4 mt-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Flashcards</h3>
+                <p className="text-muted-foreground mb-4">Review your flashcards for quick revision</p>
+                <FlashcardViewer />
+              </Card>
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">MCQ Practice</h3>
+                <p className="text-muted-foreground mb-4">Test your knowledge with practice questions</p>
+                <MCQPractice />
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
