@@ -17,3 +17,12 @@ verify_jwt = true
 
 [functions.suggest-next-topic]
 verify_jwt = true
+
+[functions.adjust-schedule]
+verify_jwt = true
+
+[functions.generate-analytics]
+verify_jwt = true
+
+[functions.bulk-generate-questions]
+verify_jwt = true
