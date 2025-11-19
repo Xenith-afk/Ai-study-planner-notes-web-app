@@ -1,73 +1,16 @@
-# Welcome to your Lovable project
-
+#Welcome to study flow 
 ## Project info
 
 **URL**: https://lovable.dev/projects/9c8f3732-be6a-492e-9f47-9aa9317e413c
+StudyFlow is an AI-driven study management application designed to help students organise their learning more efficiently. It combines automated note generation, personalised study planning, and an intelligent chat assistant that understands and responds based on the user’s saved materials. The goal of StudyFlow is to make learning simpler, faster, and more structured by integrating modern AI capabilities into a clean and easy-to-use interface.
 
-## How can I edit this code?
+The platform allows users to generate detailed study notes from any topic or uploaded PDF. Using an AI generation pipeline, StudyFlow structures information into summaries, explanations, key concepts, and examples, making it easier for students to revise complex subjects. All notes are automatically saved and can be accessed from the dashboard at any time.
 
-There are several ways of editing your application.
+StudyFlow also includes a dedicated AI Study Buddy that provides context-aware academic assistance. The chat system is trained on the user’s stored notes, enabling it to answer questions in real time with relevant and accurate information. This feature enables students to clarify doubts quickly without switching between external resources.
 
-**Use Lovable**
+In addition to note generation and AI chat assistance, StudyFlow offers a study planning module. Users can create comprehensive study schedules, add tasks, set targets, and track their progress. The planner is designed to help students stay consistent with their learning goals while maintaining a clear overview of their workload.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9c8f3732-be6a-492e-9f47-9aa9317e413c) and start prompting.
+The application is built using modern web technologies, including React/Next.js for the frontend, TailwindCSS for styling, and serverless API routes for backend AI operations. It integrates with AI models through environment-secured API endpoints, ensuring reliable and safe processing of user data.
 
-Changes made via Lovable will be committed automatically to this repo.
+StudyFlow aims to become an all-in-one academic assistant by combining note creation, planning, and real-time AI support. Future improvements may include flashcard generation, spaced repetition, quizzes based on user notes, and advanced analytics.
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/9c8f3732-be6a-492e-9f47-9aa9317e413c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
