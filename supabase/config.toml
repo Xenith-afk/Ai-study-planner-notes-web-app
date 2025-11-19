@@ -3,6 +3,9 @@ project_id = "qaofcbwqigzkzvphagqp"
 [functions.generate-summary]
 verify_jwt = true
 
+[functions.chat-with-notes]
+verify_jwt = true
+
 [functions.generate-notes-from-pdf]
 verify_jwt = true
 

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain, Sparkles, TrendingUp } from "lucide-react";
+import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain, Sparkles, TrendingUp, MessageSquare } from "lucide-react";
 import { StudyPlanCreator } from "@/components/StudyPlanCreator";
 import { ProgressTracker } from "@/components/ProgressTracker";
 import { FlashcardViewer } from "@/components/FlashcardViewer";
@@ -12,6 +12,7 @@ import { SmartNotesGenerator } from "@/components/SmartNotesGenerator";
 import { Analytics } from "@/components/Analytics";
 import { BulkOperations } from "@/components/BulkOperations";
 import { ExportMenu } from "@/components/ExportMenu";
+import { StudyBuddyChat } from "@/components/StudyBuddyChat";
 import { StudyPlanCard } from "@/components/StudyPlanCard";
 import { NoteCard } from "@/components/NoteCard";
 import { StatsOverview } from "@/components/StatsOverview";
@@ -134,7 +135,7 @@ const Index = () => {
 
         {/* Tabs Navigation */}
         <Tabs defaultValue="overview" className="mt-8">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 max-w-6xl mx-auto gap-1">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-8 max-w-6xl mx-auto gap-1">
             <TabsTrigger value="overview" className="gap-2">
               <Target className="w-4 h-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -162,6 +163,10 @@ const Index = () => {
             <TabsTrigger value="bulk" className="gap-2">
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Bulk AI</span>
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">AI Buddy</span>
             </TabsTrigger>
           </TabsList>
 
@@ -321,6 +326,11 @@ const Index = () => {
           {/* Bulk Operations Tab */}
           <TabsContent value="bulk" className="mt-6">
             <BulkOperations />
+          </TabsContent>
+
+          {/* AI Study Buddy Tab */}
+          <TabsContent value="chat" className="mt-6">
+            <StudyBuddyChat />
           </TabsContent>
         </Tabs>
       </main>
