@@ -3,12 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain, Sparkles } from "lucide-react";
+import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain, Sparkles, TrendingUp } from "lucide-react";
 import { StudyPlanCreator } from "@/components/StudyPlanCreator";
 import { ProgressTracker } from "@/components/ProgressTracker";
 import { FlashcardViewer } from "@/components/FlashcardViewer";
 import { MCQPractice } from "@/components/MCQPractice";
 import { SmartNotesGenerator } from "@/components/SmartNotesGenerator";
+import { Analytics } from "@/components/Analytics";
+import { BulkOperations } from "@/components/BulkOperations";
+import { ExportMenu } from "@/components/ExportMenu";
 import { StudyPlanCard } from "@/components/StudyPlanCard";
 import { NoteCard } from "@/components/NoteCard";
 import { StatsOverview } from "@/components/StatsOverview";
@@ -97,6 +100,7 @@ const Index = () => {
               <div className="hidden sm:block">
                 <SmartNotesGenerator onNotesGenerated={fetchData} />
               </div>
+              <ExportMenu />
               <Button 
                 className="gap-2"
                 onClick={() => setIsCreateNoteOpen(true)}
@@ -130,18 +134,18 @@ const Index = () => {
 
         {/* Tabs Navigation */}
         <Tabs defaultValue="overview" className="mt-8">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 max-w-4xl mx-auto gap-1">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 max-w-6xl mx-auto gap-1">
             <TabsTrigger value="overview" className="gap-2">
               <Target className="w-4 h-4" />
-              Overview
+              <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
             <TabsTrigger value="notes" className="gap-2">
               <BookOpen className="w-4 h-4" />
-              Notes
+              <span className="hidden sm:inline">Notes</span>
             </TabsTrigger>
             <TabsTrigger value="plans" className="gap-2">
               <Calendar className="w-4 h-4" />
-              Plans
+              <span className="hidden sm:inline">Plans</span>
             </TabsTrigger>
             <TabsTrigger value="progress" className="gap-2">
               <BarChart3 className="w-4 h-4" />
@@ -150,6 +154,14 @@ const Index = () => {
             <TabsTrigger value="practice" className="gap-2">
               <Zap className="w-4 h-4" />
               <span className="hidden sm:inline">Practice</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="bulk" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Bulk AI</span>
             </TabsTrigger>
           </TabsList>
 
@@ -299,6 +311,16 @@ const Index = () => {
                 <MCQPractice />
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="mt-6">
+            <Analytics />
+          </TabsContent>
+
+          {/* Bulk Operations Tab */}
+          <TabsContent value="bulk" className="mt-6">
+            <BulkOperations />
           </TabsContent>
         </Tabs>
       </main>
