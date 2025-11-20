@@ -23,32 +23,64 @@ export const SmartNotesGenerator = ({ onNotesGenerated }: { onNotesGenerated: ()
 
     setLoading(true);
     try {
+      console.log('Calling generate-notes-from-pdf with topic:', topic);
+      
       const { data, error } = await supabase.functions.invoke('generate-notes-from-pdf', {
-        body: { topic, pdfUrl: '' },
+        body: { topic: topic.trim(), pdfUrl: '' },
       });
 
-      if (error) throw error;
+      console.log('Function response:', { data, error });
 
-      const notesData = JSON.parse(data.notes);
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw new Error(error.message || 'Failed to invoke function');
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (!data || !data.notes) {
+        console.error('Invalid response structure:', data);
+        throw new Error('Invalid response from AI service');
+      }
+
+      // Parse the notes - the function now returns both raw and parsed
+      let notesData;
+      if (data.parsed) {
+        notesData = data.parsed;
+      } else {
+        notesData = typeof data.notes === 'string' ? JSON.parse(data.notes) : data.notes;
+      }
+      
+      console.log('Parsed notes data:', notesData);
       setGeneratedNotes(notesData);
       
       // Save to database
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('notes').insert({
+        const { error: insertError } = await supabase.from('notes').insert({
           user_id: user.id,
           title: notesData.title || topic,
           subject: topic,
-          content: data.notes,
+          content: JSON.stringify(notesData),
           ai_summary: 'AI-generated structured notes',
         });
+        
+        if (insertError) {
+          console.error('Error saving note:', insertError);
+          toast.error('Notes generated but failed to save');
+          return;
+        }
       }
 
-      toast.success('Smart notes generated!');
+      toast.success('Smart notes generated and saved!');
       onNotesGenerated();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating notes:', error);
-      toast.error('Failed to generate notes');
+      const errorMessage = error?.message || 'Failed to generate notes. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
