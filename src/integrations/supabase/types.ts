@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          achievement_description: string | null
+          achievement_name: string
+          achievement_type: string
+          badge_icon: string | null
+          created_at: string | null
+          id: string
+          points: number | null
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_description?: string | null
+          achievement_name: string
+          achievement_type: string
+          badge_icon?: string | null
+          created_at?: string | null
+          id?: string
+          points?: number | null
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_description?: string | null
+          achievement_name?: string
+          achievement_type?: string
+          badge_icon?: string | null
+          created_at?: string | null
+          id?: string
+          points?: number | null
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       flashcards: {
         Row: {
           answer: string
@@ -351,6 +387,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_sessions: {
+        Row: {
+          created_at: string | null
+          duration_minutes: number | null
+          id: string
+          notes_created: number | null
+          questions_answered: number | null
+          session_date: string
+          topics_covered: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          notes_created?: number | null
+          questions_answered?: number | null
+          session_date?: string
+          topics_covered?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          notes_created?: number | null
+          questions_answered?: number | null
+          session_date?: string
+          topics_covered?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          class_course: string | null
+          created_at: string | null
+          id: string
+          last_study_date: string | null
+          onboarding_completed: boolean | null
+          study_streak: number | null
+          target_exam: string | null
+          total_study_hours: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          class_course?: string | null
+          created_at?: string | null
+          id?: string
+          last_study_date?: string | null
+          onboarding_completed?: boolean | null
+          study_streak?: number | null
+          target_exam?: string | null
+          total_study_hours?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          class_course?: string | null
+          created_at?: string | null
+          id?: string
+          last_study_date?: string | null
+          onboarding_completed?: boolean | null
+          study_streak?: number | null
+          target_exam?: string | null
+          total_study_hours?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
