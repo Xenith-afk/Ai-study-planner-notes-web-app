@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain, Sparkles, TrendingUp, MessageSquare } from "lucide-react";
+import { BookOpen, Calendar, Target, Plus, LogOut, BarChart3, Zap, Brain, Sparkles, TrendingUp, MessageSquare, Folder, Heart, Trophy, Home as HomeIcon } from "lucide-react";
 import { StudyPlanCreator } from "@/components/StudyPlanCreator";
 import { ProgressTracker } from "@/components/ProgressTracker";
 import { FlashcardViewer } from "@/components/FlashcardViewer";
@@ -17,6 +17,9 @@ import { StudyPlanCard } from "@/components/StudyPlanCard";
 import { NoteCard } from "@/components/NoteCard";
 import { StatsOverview } from "@/components/StatsOverview";
 import { CreateNoteDialog } from "@/components/CreateNoteDialog";
+import { NotesVault } from "@/components/NotesVault";
+import { BadgesAchievements } from "@/components/BadgesAchievements";
+import { StudyBuddyMode } from "@/components/StudyBuddyMode";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,10 +28,24 @@ import { formatDistanceToNow } from "date-fns";
 const Index = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isCreateNoteOpen, setIsCreateNoteOpen] = useState(false);
   const [notes, setNotes] = useState<any[]>([]);
   const [studyPlans, setStudyPlans] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  
+  // Determine initial tab from route
+  const getInitialTab = () => {
+    const path = location.pathname;
+    if (path === "/vault") return "vault";
+    if (path === "/buddy") return "buddy";
+    if (path === "/achievements") return "achievements";
+    if (path === "/plans") return "plans";
+    if (path === "/practice") return "practice";
+    return "overview";
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
 
   useEffect(() => {
     if (!loading && !user) {
@@ -86,14 +103,22 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/")}
+                className="shrink-0"
+              >
+                <HomeIcon className="w-5 h-5" />
+              </Button>
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                 <BookOpen className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  StudyFlow
+                  StudyFlow AI
                 </h1>
-                <p className="text-xs text-muted-foreground">AI-Powered Learning</p>
+                <p className="text-xs text-muted-foreground">Dashboard</p>
               </div>
             </div>
             
@@ -134,8 +159,8 @@ const Index = () => {
         />
 
         {/* Tabs Navigation */}
-        <Tabs defaultValue="overview" className="mt-8">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-8 max-w-6xl mx-auto gap-1">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-11 max-w-6xl mx-auto gap-1">
             <TabsTrigger value="overview" className="gap-2">
               <Target className="w-4 h-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -166,7 +191,19 @@ const Index = () => {
             </TabsTrigger>
             <TabsTrigger value="chat" className="gap-2">
               <MessageSquare className="w-4 h-4" />
-              <span className="hidden sm:inline">AI Buddy</span>
+              <span className="hidden sm:inline">AI Chat</span>
+            </TabsTrigger>
+            <TabsTrigger value="vault" className="gap-2">
+              <Folder className="w-4 h-4" />
+              <span className="hidden sm:inline">Vault</span>
+            </TabsTrigger>
+            <TabsTrigger value="buddy" className="gap-2">
+              <Heart className="w-4 h-4" />
+              <span className="hidden sm:inline">Buddy</span>
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="gap-2">
+              <Trophy className="w-4 h-4" />
+              <span className="hidden sm:inline">Badges</span>
             </TabsTrigger>
           </TabsList>
 
@@ -328,9 +365,24 @@ const Index = () => {
             <BulkOperations />
           </TabsContent>
 
-          {/* AI Study Buddy Tab */}
+          {/* AI Study Buddy Chat Tab */}
           <TabsContent value="chat" className="mt-6">
             <StudyBuddyChat />
+          </TabsContent>
+
+          {/* Notes Vault Tab */}
+          <TabsContent value="vault" className="mt-6">
+            <NotesVault />
+          </TabsContent>
+
+          {/* Study Buddy Mode Tab */}
+          <TabsContent value="buddy" className="mt-6">
+            <StudyBuddyMode />
+          </TabsContent>
+
+          {/* Badges & Achievements Tab */}
+          <TabsContent value="achievements" className="mt-6">
+            <BadgesAchievements />
           </TabsContent>
         </Tabs>
       </main>
