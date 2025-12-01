@@ -22,6 +22,8 @@ import { BadgesAchievements } from "@/components/BadgesAchievements";
 import { StudyBuddyMode } from "@/components/StudyBuddyMode";
 import { HabitTracker } from "@/components/HabitTracker";
 import { TodoList } from "@/components/TodoList";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { ProductivityAnalytics } from "@/components/ProductivityAnalytics";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -128,6 +130,7 @@ const Index = () => {
               <div className="hidden sm:block">
                 <SmartNotesGenerator onNotesGenerated={fetchData} />
               </div>
+              <NotificationCenter />
               <ExportMenu />
               <Button 
                 className="gap-2"
@@ -162,7 +165,7 @@ const Index = () => {
 
         {/* Tabs Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-13 max-w-7xl mx-auto gap-1 overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-14 max-w-7xl mx-auto gap-1 overflow-x-auto">
             <TabsTrigger value="overview" className="gap-2">
               <Target className="w-4 h-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -186,6 +189,10 @@ const Index = () => {
             <TabsTrigger value="analytics" className="gap-2">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="productivity" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Productivity</span>
             </TabsTrigger>
             <TabsTrigger value="bulk" className="gap-2">
               <Sparkles className="w-4 h-4" />
@@ -368,6 +375,11 @@ const Index = () => {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="mt-6">
             <Analytics />
+          </TabsContent>
+
+          {/* Productivity Analytics Tab */}
+          <TabsContent value="productivity" className="mt-6">
+            <ProductivityAnalytics />
           </TabsContent>
 
           {/* Bulk Operations Tab */}
