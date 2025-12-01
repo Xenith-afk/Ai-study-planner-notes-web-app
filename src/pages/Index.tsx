@@ -20,6 +20,8 @@ import { CreateNoteDialog } from "@/components/CreateNoteDialog";
 import { NotesVault } from "@/components/NotesVault";
 import { BadgesAchievements } from "@/components/BadgesAchievements";
 import { StudyBuddyMode } from "@/components/StudyBuddyMode";
+import { HabitTracker } from "@/components/HabitTracker";
+import { TodoList } from "@/components/TodoList";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -160,7 +162,7 @@ const Index = () => {
 
         {/* Tabs Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-11 max-w-6xl mx-auto gap-1">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-13 max-w-7xl mx-auto gap-1 overflow-x-auto">
             <TabsTrigger value="overview" className="gap-2">
               <Target className="w-4 h-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -204,6 +206,14 @@ const Index = () => {
             <TabsTrigger value="achievements" className="gap-2">
               <Trophy className="w-4 h-4" />
               <span className="hidden sm:inline">Badges</span>
+            </TabsTrigger>
+            <TabsTrigger value="habits" className="gap-2">
+              <Target className="w-4 h-4" />
+              <span className="hidden sm:inline">Habits</span>
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="gap-2">
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">Tasks</span>
             </TabsTrigger>
           </TabsList>
 
@@ -383,6 +393,16 @@ const Index = () => {
           {/* Badges & Achievements Tab */}
           <TabsContent value="achievements" className="mt-6">
             <BadgesAchievements />
+          </TabsContent>
+
+          {/* Habit Tracker Tab */}
+          <TabsContent value="habits" className="mt-6">
+            <HabitTracker />
+          </TabsContent>
+
+          {/* To-Do Tasks Tab */}
+          <TabsContent value="tasks" className="mt-6">
+            <TodoList />
           </TabsContent>
         </Tabs>
       </main>
