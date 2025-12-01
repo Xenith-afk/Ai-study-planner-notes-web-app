@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, CheckCircle2, Circle, Calendar } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, Calendar, Repeat } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, addDays, addWeeks, addMonths } from "date-fns";
 
 interface Task {
   id: string;
@@ -18,6 +20,10 @@ interface Task {
   due_date: string | null;
   priority: string;
   category: string;
+  is_recurring: boolean;
+  recurrence_pattern: string | null;
+  recurrence_interval: number;
+  recurrence_end_date: string | null;
 }
 
 export const TodoList = () => {
@@ -29,7 +35,11 @@ export const TodoList = () => {
     description: "",
     priority: "medium",
     category: "general",
-    due_date: ""
+    due_date: "",
+    is_recurring: false,
+    recurrence_pattern: "daily",
+    recurrence_interval: 1,
+    recurrence_end_date: ""
   });
 
   useEffect(() => {
@@ -63,26 +73,100 @@ export const TodoList = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const taskData: any = {
+      ...newTask,
+      user_id: user.id,
+      due_date: newTask.due_date || null,
+      recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
+    };
+
+    if (newTask.is_recurring && newTask.due_date) {
+      taskData.next_occurrence = calculateNextOccurrence(
+        new Date(newTask.due_date),
+        newTask.recurrence_pattern,
+        newTask.recurrence_interval
+      );
+    }
+
     const { error } = await supabase
       .from("tasks")
-      .insert({
-        ...newTask,
-        user_id: user.id,
-        due_date: newTask.due_date || null
-      });
+      .insert(taskData);
 
     if (error) {
       toast.error("Failed to add task");
       return;
     }
 
-    toast.success("Task added!");
-    setNewTask({ title: "", description: "", priority: "medium", category: "general", due_date: "" });
+    toast.success(newTask.is_recurring ? "Recurring task created!" : "Task added!");
+    setNewTask({ 
+      title: "", 
+      description: "", 
+      priority: "medium", 
+      category: "general", 
+      due_date: "",
+      is_recurring: false,
+      recurrence_pattern: "daily",
+      recurrence_interval: 1,
+      recurrence_end_date: ""
+    });
     setIsOpen(false);
     fetchTasks();
   };
 
+  const calculateNextOccurrence = (currentDate: Date, pattern: string, interval: number): string => {
+    let nextDate: Date;
+    switch (pattern) {
+      case "daily":
+        nextDate = addDays(currentDate, interval);
+        break;
+      case "weekly":
+        nextDate = addWeeks(currentDate, interval);
+        break;
+      case "monthly":
+        nextDate = addMonths(currentDate, interval);
+        break;
+      default:
+        nextDate = addDays(currentDate, 1);
+    }
+    return nextDate.toISOString();
+  };
+
   const toggleTask = async (taskId: string, completed: boolean) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // If completing a recurring task, create next occurrence
+    if (!completed && task.is_recurring && task.due_date) {
+      const nextOccurrence = calculateNextOccurrence(
+        new Date(task.due_date),
+        task.recurrence_pattern || "daily",
+        task.recurrence_interval
+      );
+
+      // Check if next occurrence is before end date
+      const shouldCreateNext = !task.recurrence_end_date || 
+        new Date(nextOccurrence) <= new Date(task.recurrence_end_date);
+
+      if (shouldCreateNext) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("tasks").insert({
+            user_id: user.id,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            category: task.category,
+            due_date: nextOccurrence,
+            is_recurring: true,
+            recurrence_pattern: task.recurrence_pattern,
+            recurrence_interval: task.recurrence_interval,
+            recurrence_end_date: task.recurrence_end_date,
+            parent_task_id: task.id,
+          });
+        }
+      }
+    }
+
     const { error } = await supabase
       .from("tasks")
       .update({ completed: !completed })
@@ -193,6 +277,58 @@ export const TodoList = () => {
                   onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
                 />
               </div>
+
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="recurring">Make this a recurring task</Label>
+                  <Switch
+                    id="recurring"
+                    checked={newTask.is_recurring}
+                    onCheckedChange={(checked) => setNewTask({ ...newTask, is_recurring: checked })}
+                  />
+                </div>
+
+                {newTask.is_recurring && (
+                  <div className="space-y-4 pl-4 border-l-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Repeat Pattern</label>
+                        <Select 
+                          value={newTask.recurrence_pattern} 
+                          onValueChange={(value) => setNewTask({ ...newTask, recurrence_pattern: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Every</label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={newTask.recurrence_interval}
+                          onChange={(e) => setNewTask({ ...newTask, recurrence_interval: parseInt(e.target.value) || 1 })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">End Date (Optional)</label>
+                      <Input
+                        type="date"
+                        value={newTask.recurrence_end_date}
+                        onChange={(e) => setNewTask({ ...newTask, recurrence_end_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button onClick={addTask} className="w-full">Create Task</Button>
             </div>
           </DialogContent>
@@ -254,6 +390,11 @@ export const TodoList = () => {
                       <span className={`font-medium ${task.completed ? "line-through" : ""}`}>
                         {task.title}
                       </span>
+                      {task.is_recurring && (
+                        <span title="Recurring task">
+                          <Repeat className="w-3 h-3 text-primary" />
+                        </span>
+                      )}
                       <span className={`text-xs font-semibold ${getPriorityColor(task.priority)}`}>
                         {task.priority.toUpperCase()}
                       </span>
