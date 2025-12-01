@@ -91,6 +91,80 @@ export type Database = {
           },
         ]
       }
+      habit_completions: {
+        Row: {
+          completed_date: string
+          created_at: string
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_date?: string
+          created_at?: string
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_date?: string
+          created_at?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          best_streak: number | null
+          color: string | null
+          created_at: string
+          description: string | null
+          frequency: string
+          icon: string | null
+          id: string
+          name: string
+          streak: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_streak?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          frequency?: string
+          icon?: string | null
+          id?: string
+          name: string
+          streak?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_streak?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          frequency?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          streak?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mcqs: {
         Row: {
           correct_answer: string
@@ -417,6 +491,45 @@ export type Database = {
           questions_answered?: number | null
           session_date?: string
           topics_covered?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          category: string | null
+          completed: boolean | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          completed?: boolean | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          completed?: boolean | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          title?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
