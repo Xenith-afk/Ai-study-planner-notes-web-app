@@ -37,8 +37,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Generating MCQs...");
-
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -82,8 +80,6 @@ serve(async (req) => {
 
     const data = await response.json();
     const mcqs = data.choices[0].message.content;
-
-    console.log("MCQs generated successfully");
 
     return new Response(
       JSON.stringify({ mcqs }),

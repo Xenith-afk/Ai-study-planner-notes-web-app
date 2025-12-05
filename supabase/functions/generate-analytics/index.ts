@@ -48,8 +48,6 @@ serve(async (req) => {
     const completedSchedule = scheduleData?.filter(s => s.completed).length || 0;
     const skippedSchedule = scheduleData?.filter(s => s.skipped).length || 0;
 
-    console.log("Generating analytics insights...");
-
     // Sanitize data before sending to AI (only send counts, not actual topic names if sensitive)
     const weakTopicsList = weakTopics.slice(0, 10).join(', ') || 'none';
 
@@ -96,8 +94,6 @@ serve(async (req) => {
 
     const data = await response.json();
     const analyticsData = JSON.parse(data.choices[0].message.content);
-
-    console.log("Analytics insights generated successfully");
 
     return new Response(
       JSON.stringify({ 

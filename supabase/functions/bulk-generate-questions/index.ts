@@ -46,8 +46,6 @@ serve(async (req) => {
 
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    console.log(`Bulk generating ${type} for ${noteIds.length} notes...`);
-
     // Fetch all selected notes
     const { data: notes, error: fetchError } = await supabaseClient
       .from("notes")
@@ -150,12 +148,10 @@ serve(async (req) => {
           }
         }
       } catch (error) {
-        console.error(`Error processing note ${note.id}`);
-        results.errors.push(`Failed to process "${note.title}"`);
+        console.error("Error processing note");
+        results.errors.push(`Failed to process note`);
       }
     }
-
-    console.log(`Bulk generation complete: ${results.mcqs} MCQs, ${results.flashcards} flashcards`);
 
     return new Response(
       JSON.stringify({ 

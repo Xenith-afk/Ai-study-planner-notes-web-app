@@ -50,8 +50,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Fetching user's notes for context...");
-
     // Fetch user's notes to provide context
     const { data: notes } = await supabaseClient
       .from("notes")
@@ -63,8 +61,6 @@ serve(async (req) => {
     const notesContext = notes?.map(note => 
       `Subject: ${note.subject}\nTitle: ${note.title}\nSummary: ${note.ai_summary || ''}\nContent: ${note.content?.substring(0, 500) || ''}`
     ).join("\n\n") || "No notes available.";
-
-    console.log("Generating AI response with notes context...");
 
     const messages = [
       {
@@ -92,7 +88,6 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const error = await response.text();
       console.error("AI API error:", response.status);
       
       if (response.status === 429) {
@@ -111,8 +106,6 @@ serve(async (req) => {
 
       throw new Error("AI API error occurred");
     }
-
-    console.log("Streaming AI response to client...");
 
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
