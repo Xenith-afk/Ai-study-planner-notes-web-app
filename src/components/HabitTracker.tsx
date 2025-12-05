@@ -7,6 +7,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, CheckCircle2, Circle, Flame } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+// Validation schema for habit form
+const habitSchema = z.object({
+  name: z.string().trim().min(1, "Habit name is required").max(100, "Name must be less than 100 characters"),
+  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  frequency: z.enum(["daily", "weekly"]),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format"),
+  icon: z.string().max(4, "Icon must be 4 characters or less")
+});
 
 interface Habit {
   id: string;
@@ -29,6 +39,7 @@ export const HabitTracker = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completions, setCompletions] = useState<HabitCompletion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [newHabit, setNewHabit] = useState({
     name: "",
     description: "",
@@ -80,9 +91,20 @@ export const HabitTracker = () => {
     setCompletions(data || []);
   };
 
-  const addHabit = async () => {
-    if (!newHabit.name.trim()) {
-      toast.error("Habit name is required");
+  const validateAndAddHabit = async () => {
+    setErrors({});
+    
+    const result = habitSchema.safeParse(newHabit);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error(result.error.errors[0].message);
       return;
     }
 
@@ -92,7 +114,11 @@ export const HabitTracker = () => {
     const { error } = await supabase
       .from("habits")
       .insert({
-        ...newHabit,
+        name: result.data.name,
+        description: result.data.description || null,
+        frequency: result.data.frequency,
+        color: result.data.color,
+        icon: result.data.icon,
         user_id: user.id
       });
 
@@ -103,6 +129,7 @@ export const HabitTracker = () => {
 
     toast.success("Habit added!");
     setNewHabit({ name: "", description: "", frequency: "daily", color: "#8B5CF6", icon: "⭐" });
+    setErrors({});
     setIsOpen(false);
     fetchHabits();
   };
@@ -190,7 +217,7 @@ export const HabitTracker = () => {
           <Flame className="w-5 h-5 text-orange-500" />
           Habit Tracker
         </CardTitle>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setErrors({}); }}>
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="w-4 h-4 mr-1" />
@@ -208,7 +235,10 @@ export const HabitTracker = () => {
                   value={newHabit.name}
                   onChange={(e) => setNewHabit({ ...newHabit, name: e.target.value })}
                   placeholder="e.g., Study for 1 hour"
+                  maxLength={100}
+                  className={errors.name ? "border-destructive" : ""}
                 />
+                {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium">Description</label>
@@ -216,7 +246,10 @@ export const HabitTracker = () => {
                   value={newHabit.description}
                   onChange={(e) => setNewHabit({ ...newHabit, description: e.target.value })}
                   placeholder="Optional"
+                  maxLength={500}
+                  className={errors.description ? "border-destructive" : ""}
                 />
+                {errors.description && <p className="text-xs text-destructive mt-1">{errors.description}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium">Frequency</label>
@@ -236,10 +269,12 @@ export const HabitTracker = () => {
                   value={newHabit.icon}
                   onChange={(e) => setNewHabit({ ...newHabit, icon: e.target.value })}
                   placeholder="⭐"
-                  maxLength={2}
+                  maxLength={4}
+                  className={errors.icon ? "border-destructive" : ""}
                 />
+                {errors.icon && <p className="text-xs text-destructive mt-1">{errors.icon}</p>}
               </div>
-              <Button onClick={addHabit} className="w-full">Create Habit</Button>
+              <Button onClick={validateAndAddHabit} className="w-full">Create Habit</Button>
             </div>
           </DialogContent>
         </Dialog>
