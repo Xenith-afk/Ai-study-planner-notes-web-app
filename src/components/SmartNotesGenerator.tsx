@@ -23,26 +23,19 @@ export const SmartNotesGenerator = ({ onNotesGenerated }: { onNotesGenerated: ()
 
     setLoading(true);
     try {
-      console.log('Calling generate-notes-from-pdf with topic:', topic);
-      
       const { data, error } = await supabase.functions.invoke('generate-notes-from-pdf', {
         body: { topic: topic.trim(), pdfUrl: '' },
       });
 
-      console.log('Function response:', { data, error });
-
       if (error) {
-        console.error('Function invocation error:', error);
         throw new Error(error.message || 'Failed to invoke function');
       }
 
       if (data?.error) {
-        console.error('Function returned error:', data.error);
         throw new Error(data.error);
       }
 
       if (!data || !data.notes) {
-        console.error('Invalid response structure:', data);
         throw new Error('Invalid response from AI service');
       }
 
@@ -54,7 +47,6 @@ export const SmartNotesGenerator = ({ onNotesGenerated }: { onNotesGenerated: ()
         notesData = typeof data.notes === 'string' ? JSON.parse(data.notes) : data.notes;
       }
       
-      console.log('Parsed notes data:', notesData);
       setGeneratedNotes(notesData);
       
       // Save to database
@@ -69,7 +61,6 @@ export const SmartNotesGenerator = ({ onNotesGenerated }: { onNotesGenerated: ()
         });
         
         if (insertError) {
-          console.error('Error saving note:', insertError);
           toast.error('Notes generated but failed to save');
           return;
         }
@@ -78,7 +69,6 @@ export const SmartNotesGenerator = ({ onNotesGenerated }: { onNotesGenerated: ()
       toast.success('Smart notes generated and saved!');
       onNotesGenerated();
     } catch (error: any) {
-      console.error('Error generating notes:', error);
       const errorMessage = error?.message || 'Failed to generate notes. Please try again.';
       toast.error(errorMessage);
     } finally {
@@ -122,7 +112,6 @@ export const SmartNotesGenerator = ({ onNotesGenerated }: { onNotesGenerated: ()
       toast.success('Notes generated from PDF!');
       onNotesGenerated();
     } catch (error) {
-      console.error('Error processing PDF:', error);
       toast.error('Failed to process PDF');
     } finally {
       setLoading(false);

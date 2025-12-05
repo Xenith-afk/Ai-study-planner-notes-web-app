@@ -70,14 +70,11 @@ serve(async (req) => {
     });
 
     if (skippedItems.length === 0) {
-      console.log("No skipped items found");
       return new Response(
         JSON.stringify({ message: "Schedule is up to date", adjusted: false }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log(`Found ${skippedItems.length} skipped items, redistributing...`);
 
     // Mark old items as skipped
     for (const item of skippedItems) {
@@ -131,8 +128,6 @@ serve(async (req) => {
       .insert(newSchedule);
 
     if (insertError) throw insertError;
-
-    console.log(`Successfully redistributed ${skippedItems.length} topics`);
 
     return new Response(
       JSON.stringify({ 

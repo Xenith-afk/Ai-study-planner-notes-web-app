@@ -42,8 +42,6 @@ serve(async (req) => {
       );
     }
 
-    console.log("Generating personalized study plan");
-
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -87,8 +85,6 @@ serve(async (req) => {
 
     const data = await response.json();
     const plan = data.choices[0].message.content;
-
-    console.log("Study plan generated successfully");
 
     return new Response(
       JSON.stringify({ plan }),

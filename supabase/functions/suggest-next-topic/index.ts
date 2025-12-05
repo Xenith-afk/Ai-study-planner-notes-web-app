@@ -38,8 +38,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Suggesting next topic...");
-
     // Limit data sent to AI to prevent excessive costs
     const completedList = completedTopics.slice(0, 20).join(', ') || 'none';
     const weakList = weakTopics.slice(0, 10).join(', ') || 'none';
@@ -88,8 +86,6 @@ serve(async (req) => {
 
     const data = await response.json();
     const suggestion = data.choices[0].message.content;
-
-    console.log("Topic suggestion generated successfully");
 
     return new Response(
       JSON.stringify({ suggestion }),

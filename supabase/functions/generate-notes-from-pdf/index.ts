@@ -40,8 +40,6 @@ serve(async (req) => {
       );
     }
 
-    console.log("Generating notes for topic length:", topic.length);
-
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -104,8 +102,6 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log("Notes generated and parsed successfully");
 
     return new Response(
       JSON.stringify({ notes: notesContent, parsed: notesData }),
