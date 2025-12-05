@@ -11,6 +11,20 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
+import { z } from "zod";
+
+// Validation schema for task form
+const taskSchema = z.object({
+  title: z.string().trim().min(1, "Task title is required").max(200, "Title must be less than 200 characters"),
+  description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
+  priority: z.enum(["low", "medium", "high"]),
+  category: z.string().trim().max(50, "Category must be less than 50 characters").default("general"),
+  due_date: z.string().optional(),
+  is_recurring: z.boolean(),
+  recurrence_pattern: z.enum(["daily", "weekly", "monthly"]),
+  recurrence_interval: z.number().int().min(1, "Interval must be at least 1").max(365, "Interval must be less than 365"),
+  recurrence_end_date: z.string().optional()
+});
 
 interface Task {
   id: string;
@@ -30,6 +44,7 @@ export const TodoList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -64,9 +79,20 @@ export const TodoList = () => {
     setTasks(data || []);
   };
 
-  const addTask = async () => {
-    if (!newTask.title.trim()) {
-      toast.error("Task title is required");
+  const validateAndAddTask = async () => {
+    setErrors({});
+    
+    const result = taskSchema.safeParse(newTask);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error(result.error.errors[0].message);
       return;
     }
 
@@ -74,17 +100,23 @@ export const TodoList = () => {
     if (!user) return;
 
     const taskData: any = {
-      ...newTask,
+      title: result.data.title,
+      description: result.data.description || null,
+      priority: result.data.priority,
+      category: result.data.category || "general",
       user_id: user.id,
-      due_date: newTask.due_date || null,
-      recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
+      due_date: result.data.due_date || null,
+      is_recurring: result.data.is_recurring,
+      recurrence_pattern: result.data.is_recurring ? result.data.recurrence_pattern : null,
+      recurrence_interval: result.data.recurrence_interval,
+      recurrence_end_date: result.data.is_recurring && result.data.recurrence_end_date ? result.data.recurrence_end_date : null,
     };
 
-    if (newTask.is_recurring && newTask.due_date) {
+    if (result.data.is_recurring && result.data.due_date) {
       taskData.next_occurrence = calculateNextOccurrence(
-        new Date(newTask.due_date),
-        newTask.recurrence_pattern,
-        newTask.recurrence_interval
+        new Date(result.data.due_date),
+        result.data.recurrence_pattern,
+        result.data.recurrence_interval
       );
     }
 
@@ -97,7 +129,7 @@ export const TodoList = () => {
       return;
     }
 
-    toast.success(newTask.is_recurring ? "Recurring task created!" : "Task added!");
+    toast.success(result.data.is_recurring ? "Recurring task created!" : "Task added!");
     setNewTask({ 
       title: "", 
       description: "", 
@@ -109,6 +141,7 @@ export const TodoList = () => {
       recurrence_interval: 1,
       recurrence_end_date: ""
     });
+    setErrors({});
     setIsOpen(false);
     fetchTasks();
   };
@@ -213,11 +246,20 @@ export const TodoList = () => {
   const activeCount = tasks.filter(t => !t.completed).length;
   const completedCount = tasks.filter(t => t.completed).length;
 
+  const handleIntervalChange = (value: string) => {
+    const parsed = parseInt(value);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 365) {
+      setNewTask({ ...newTask, recurrence_interval: parsed });
+    } else if (value === "") {
+      setNewTask({ ...newTask, recurrence_interval: 1 });
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>To-Do Tasks</CardTitle>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setErrors({}); }}>
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="w-4 h-4 mr-1" />
@@ -235,7 +277,10 @@ export const TodoList = () => {
                   value={newTask.title}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                   placeholder="e.g., Complete math assignment"
+                  maxLength={200}
+                  className={errors.title ? "border-destructive" : ""}
                 />
+                {errors.title && <p className="text-xs text-destructive mt-1">{errors.title}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium">Description</label>
@@ -244,7 +289,10 @@ export const TodoList = () => {
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                   placeholder="Optional details"
                   rows={3}
+                  maxLength={1000}
+                  className={errors.description ? "border-destructive" : ""}
                 />
+                {errors.description && <p className="text-xs text-destructive mt-1">{errors.description}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -266,7 +314,10 @@ export const TodoList = () => {
                     value={newTask.category}
                     onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
                     placeholder="general"
+                    maxLength={50}
+                    className={errors.category ? "border-destructive" : ""}
                   />
+                  {errors.category && <p className="text-xs text-destructive mt-1">{errors.category}</p>}
                 </div>
               </div>
               <div>
@@ -312,9 +363,12 @@ export const TodoList = () => {
                         <Input
                           type="number"
                           min="1"
+                          max="365"
                           value={newTask.recurrence_interval}
-                          onChange={(e) => setNewTask({ ...newTask, recurrence_interval: parseInt(e.target.value) || 1 })}
+                          onChange={(e) => handleIntervalChange(e.target.value)}
+                          className={errors.recurrence_interval ? "border-destructive" : ""}
                         />
+                        {errors.recurrence_interval && <p className="text-xs text-destructive mt-1">{errors.recurrence_interval}</p>}
                       </div>
                     </div>
                     <div>
@@ -329,7 +383,7 @@ export const TodoList = () => {
                 )}
               </div>
 
-              <Button onClick={addTask} className="w-full">Create Task</Button>
+              <Button onClick={validateAndAddTask} className="w-full">Create Task</Button>
             </div>
           </DialogContent>
         </Dialog>

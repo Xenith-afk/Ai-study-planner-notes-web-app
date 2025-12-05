@@ -7,6 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+// Validation schema for notification preferences
+const preferencesSchema = z.object({
+  task_reminders_enabled: z.boolean(),
+  habit_reminders_enabled: z.boolean(),
+  reminder_time: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
+  daily_summary_enabled: z.boolean(),
+  email_notifications: z.boolean(),
+  push_notifications: z.boolean(),
+});
 
 interface NotificationPreferences {
   task_reminders_enabled: boolean;
@@ -31,6 +42,7 @@ export const NotificationSettings = ({ onBack }: NotificationSettingsProps) => {
     push_notifications: true,
   });
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchPreferences();
@@ -65,6 +77,22 @@ export const NotificationSettings = ({ onBack }: NotificationSettingsProps) => {
   };
 
   const savePreferences = async () => {
+    setErrors({});
+    
+    const result = preferencesSchema.safeParse(preferences);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error(result.error.errors[0].message);
+      return;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -72,7 +100,7 @@ export const NotificationSettings = ({ onBack }: NotificationSettingsProps) => {
       .from("notification_preferences")
       .upsert({
         user_id: user.id,
-        ...preferences,
+        ...result.data,
       });
 
     if (error) {
@@ -88,6 +116,14 @@ export const NotificationSettings = ({ onBack }: NotificationSettingsProps) => {
       ...prev,
       [key]: value,
     }));
+    // Clear error for this field when user makes changes
+    if (errors[key]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[key];
+        return newErrors;
+      });
+    }
   };
 
   if (loading) {
@@ -150,7 +186,11 @@ export const NotificationSettings = ({ onBack }: NotificationSettingsProps) => {
                 type="time"
                 value={preferences.reminder_time}
                 onChange={(e) => updatePreference("reminder_time", e.target.value)}
+                className={errors.reminder_time ? "border-destructive" : ""}
               />
+              {errors.reminder_time && (
+                <p className="text-xs text-destructive">{errors.reminder_time}</p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Choose when you'd like to receive daily reminders
               </p>
