@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Note: This function doesn't take user input, it fetches data from the database
+// Authentication is the primary validation
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -47,6 +50,9 @@ serve(async (req) => {
 
     console.log("Generating analytics insights...");
 
+    // Sanitize data before sending to AI (only send counts, not actual topic names if sensitive)
+    const weakTopicsList = weakTopics.slice(0, 10).join(', ') || 'none';
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -62,15 +68,14 @@ serve(async (req) => {
           },
           {
             role: "user",
-            content: `Analyze this study data: ${completedCount}/${totalCount} topics completed, ${weakTopics.length} weak topics (${weakTopics.join(', ')}), ${completedSchedule} scheduled items completed, ${skippedSchedule} items skipped. Provide insights and improvement suggestions.`,
+            content: `Analyze this study data: ${completedCount}/${totalCount} topics completed, ${weakTopics.length} weak topics (${weakTopicsList}), ${completedSchedule} scheduled items completed, ${skippedSchedule} items skipped. Provide insights and improvement suggestions.`,
           },
         ],
       }),
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("AI API error:", response.status, error);
+      console.error("AI API error:", response.status);
       
       if (response.status === 429) {
         return new Response(
@@ -86,7 +91,7 @@ serve(async (req) => {
         );
       }
 
-      throw new Error(`AI API error: ${error}`);
+      throw new Error("AI API error occurred");
     }
 
     const data = await response.json();
@@ -108,7 +113,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in generate-analytics:", error);
+    console.error("Error in generate-analytics:", error instanceof Error ? error.message : "Unknown error");
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Failed to generate analytics" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

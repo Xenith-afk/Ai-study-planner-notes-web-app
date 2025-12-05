@@ -1,9 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation schema
+const inputSchema = z.object({
+  content: z.string().min(1, "Content is required").max(20000, "Content too long (max 20000 chars)")
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,7 +17,18 @@ serve(async (req) => {
   }
 
   try {
-    const { content } = await req.json();
+    // Validate input
+    const rawBody = await req.json();
+    const validationResult = inputSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ error: validationResult.error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { content } = validationResult.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -22,7 +39,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Generating AI summary for content of length:", content?.length || 0);
+    console.log("Generating AI summary for content length:", content.length);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -46,8 +63,7 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("AI API error:", response.status, error);
+      console.error("AI API error:", response.status);
       
       if (response.status === 429) {
         return new Response(
@@ -63,7 +79,7 @@ serve(async (req) => {
         );
       }
 
-      throw new Error(`AI API error: ${error}`);
+      throw new Error("AI API error occurred");
     }
 
     const data = await response.json();
@@ -76,7 +92,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in generate-summary:", error);
+    console.error("Error in generate-summary:", error instanceof Error ? error.message : "Unknown error");
     const errorMessage = error instanceof Error ? error.message : "Failed to generate summary";
     return new Response(
       JSON.stringify({ error: errorMessage }),

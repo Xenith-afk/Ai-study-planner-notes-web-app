@@ -1,10 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation schema
+const inputSchema = z.object({
+  noteIds: z.array(z.string().uuid("Invalid note ID")).min(1, "At least one note required").max(20, "Too many notes (max 20)"),
+  type: z.enum(["mcqs", "flashcards", "both"], { errorMap: () => ({ message: "Type must be mcqs, flashcards, or both" }) }),
+  count: z.number().int().min(1).max(20).default(5)
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -22,11 +30,21 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    const { noteIds, type, count = 5 } = await req.json();
+    // Validate input
+    const rawBody = await req.json();
+    const validationResult = inputSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ error: validationResult.error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { noteIds, type, count } = validationResult.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-    if (!noteIds || noteIds.length === 0) throw new Error("No notes selected");
 
     console.log(`Bulk generating ${type} for ${noteIds.length} notes...`);
 
@@ -67,7 +85,7 @@ serve(async (req) => {
                 },
                 {
                   role: "user",
-                  content: `Generate ${count} practice questions from: ${note.content}. Topic: ${note.title}`,
+                  content: `Generate ${count} practice questions from: ${note.content?.substring(0, 5000) || ''}. Topic: ${note.title}`,
                 },
               ],
             }),
@@ -109,7 +127,7 @@ serve(async (req) => {
                 },
                 {
                   role: "user",
-                  content: `Generate ${count} flashcards from: ${note.content}. Topic: ${note.title}`,
+                  content: `Generate ${count} flashcards from: ${note.content?.substring(0, 5000) || ''}. Topic: ${note.title}`,
                 },
               ],
             }),
@@ -132,7 +150,7 @@ serve(async (req) => {
           }
         }
       } catch (error) {
-        console.error(`Error processing note ${note.id}:`, error);
+        console.error(`Error processing note ${note.id}`);
         results.errors.push(`Failed to process "${note.title}"`);
       }
     }
@@ -148,7 +166,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in bulk-generate-questions:", error);
+    console.error("Error in bulk-generate-questions:", error instanceof Error ? error.message : "Unknown error");
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Failed to generate questions" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

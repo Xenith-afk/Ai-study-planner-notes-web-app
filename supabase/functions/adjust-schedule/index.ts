@@ -1,10 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation schema
+const inputSchema = z.object({
+  goalId: z.string().uuid("Invalid goal ID")
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -22,7 +28,18 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    const { goalId } = await req.json();
+    // Validate input
+    const rawBody = await req.json();
+    const validationResult = inputSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ error: validationResult.error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { goalId } = validationResult.data;
 
     // Get study goal details
     const { data: goal } = await supabaseClient
@@ -126,7 +143,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in adjust-schedule:", error);
+    console.error("Error in adjust-schedule:", error instanceof Error ? error.message : "Unknown error");
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Failed to adjust schedule" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
