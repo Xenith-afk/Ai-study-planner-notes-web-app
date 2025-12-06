@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { GraduationCap, Send, Eraser, Sparkles } from "lucide-react";
-
+import { GraduationCap, Send, Eraser, Sparkles, AlertTriangle } from "lucide-react";
+import { useRateLimit } from "@/hooks/useRateLimit";
 type Message = { role: "user" | "assistant"; content: string };
 
 const QUICK_PROMPTS = [
@@ -22,6 +23,10 @@ export const AITutor = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { isLimited, remainingRequests, recordRequest, getTimeUntilReset } = useRateLimit({
+    maxRequests: 15,
+    windowMs: 60000, // 15 requests per minute
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,6 +39,12 @@ export const AITutor = () => {
   const sendMessage = async (messageText?: string) => {
     const userMessage = messageText || input.trim();
     if (!userMessage || loading) return;
+
+    if (!recordRequest()) {
+      const resetSeconds = Math.ceil(getTimeUntilReset() / 1000);
+      toast.error(`Rate limit exceeded. Please wait ${resetSeconds} seconds.`);
+      return;
+    }
 
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
@@ -141,6 +152,19 @@ Be patient, encouraging, and thorough. If the student seems confused, try a diff
         <p className="text-sm text-muted-foreground">
           Ask any question - I'm here to help you learn!
         </p>
+        {isLimited && (
+          <Alert variant="destructive" className="mt-2">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Rate limit reached. Wait {Math.ceil(getTimeUntilReset() / 1000)}s before sending more messages.
+            </AlertDescription>
+          </Alert>
+        )}
+        {!isLimited && remainingRequests <= 5 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {remainingRequests} requests remaining this minute
+          </p>
+        )}
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">

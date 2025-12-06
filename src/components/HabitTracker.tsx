@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, CheckCircle2, Circle, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 // Validation schema for habit form
 const habitSchema = z.object({
@@ -40,6 +41,8 @@ export const HabitTracker = () => {
   const [completions, setCompletions] = useState<HabitCompletion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formToken, setFormToken] = useState("");
+  const { getToken, validateToken, refreshToken } = useCsrfToken();
   const [newHabit, setNewHabit] = useState({
     name: "",
     description: "",
@@ -47,6 +50,13 @@ export const HabitTracker = () => {
     color: "#8B5CF6",
     icon: "⭐"
   });
+
+  // Set CSRF token when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormToken(getToken());
+    }
+  }, [isOpen, getToken]);
 
   useEffect(() => {
     fetchHabits();
@@ -93,6 +103,14 @@ export const HabitTracker = () => {
 
   const validateAndAddHabit = async () => {
     setErrors({});
+    
+    // Validate CSRF token
+    if (!validateToken(formToken)) {
+      toast.error("Session expired. Please try again.");
+      refreshToken();
+      setFormToken(getToken());
+      return;
+    }
     
     const result = habitSchema.safeParse(newHabit);
     

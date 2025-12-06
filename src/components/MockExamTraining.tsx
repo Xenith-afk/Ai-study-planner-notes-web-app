@@ -17,8 +17,11 @@ import {
   Trophy,
   Play,
   RotateCcw,
-  Lightbulb
+  Lightbulb,
+  AlertTriangle
 } from "lucide-react";
+import { useRateLimit } from "@/hooks/useRateLimit";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ExamQuestion {
   id: string;
@@ -53,6 +56,10 @@ export const MockExamTraining = () => {
   const [result, setResult] = useState<ExamResult | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
+  const { isLimited, remainingRequests, recordRequest, getTimeUntilReset } = useRateLimit({
+    maxRequests: 5,
+    windowMs: 300000, // 5 exams per 5 minutes
+  });
 
   // Timer effect
   useEffect(() => {
@@ -74,6 +81,12 @@ export const MockExamTraining = () => {
   const generateExam = async () => {
     if (!examConfig.topic.trim()) {
       toast.error("Please enter a topic");
+      return;
+    }
+
+    if (!recordRequest()) {
+      const resetMinutes = Math.ceil(getTimeUntilReset() / 60000);
+      toast.error(`Rate limit exceeded. Please wait ${resetMinutes} minute(s).`);
       return;
     }
 
@@ -403,6 +416,19 @@ export const MockExamTraining = () => {
         <p className="text-sm text-muted-foreground">
           Practice with timed exams and get AI feedback
         </p>
+        {isLimited && (
+          <Alert variant="destructive" className="mt-2">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Rate limit reached. Wait {Math.ceil(getTimeUntilReset() / 60000)} minute(s) before generating more exams.
+            </AlertDescription>
+          </Alert>
+        )}
+        {!isLimited && remainingRequests <= 2 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {remainingRequests} exam generations remaining
+          </p>
+        )}
       </CardHeader>
 
       <CardContent className="flex-1 p-6 space-y-6">

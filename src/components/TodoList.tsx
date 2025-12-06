@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { z } from "zod";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 // Validation schema for task form
 const taskSchema = z.object({
@@ -45,6 +46,8 @@ export const TodoList = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formToken, setFormToken] = useState("");
+  const { getToken, validateToken, refreshToken } = useCsrfToken();
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -56,6 +59,13 @@ export const TodoList = () => {
     recurrence_interval: 1,
     recurrence_end_date: ""
   });
+
+  // Set CSRF token when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormToken(getToken());
+    }
+  }, [isOpen, getToken]);
 
   useEffect(() => {
     fetchTasks();
@@ -81,6 +91,14 @@ export const TodoList = () => {
 
   const validateAndAddTask = async () => {
     setErrors({});
+    
+    // Validate CSRF token
+    if (!validateToken(formToken)) {
+      toast.error("Session expired. Please try again.");
+      refreshToken();
+      setFormToken(getToken());
+      return;
+    }
     
     const result = taskSchema.safeParse(newTask);
     
