@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Brain, TrendingUp, TrendingDown, Target, Lightbulb, RefreshCw } from "lucide-react";
+import { useRateLimit } from "@/hooks/useRateLimit";
+import { Brain, TrendingUp, TrendingDown, Target, Lightbulb, RefreshCw, AlertCircle } from "lucide-react";
 
 interface TopicAnalysis {
   topic: string;
@@ -27,6 +28,12 @@ export const AdaptiveLearningAI = () => {
   const [topics, setTopics] = useState<TopicAnalysis[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [overallProgress, setOverallProgress] = useState(0);
+  
+  // Rate limit: 10 analyses per 5 minutes
+  const { isLimited, remainingRequests, recordRequest, getTimeUntilReset } = useRateLimit({
+    maxRequests: 10,
+    windowMs: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     fetchProgress();
@@ -58,6 +65,12 @@ export const AdaptiveLearningAI = () => {
   };
 
   const analyzeAndRecommend = async () => {
+    if (!recordRequest()) {
+      const seconds = Math.ceil(getTimeUntilReset() / 1000);
+      toast.error(`Rate limit reached. Please wait ${seconds} seconds.`);
+      return;
+    }
+    
     setAnalyzing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -198,9 +211,23 @@ export const AdaptiveLearningAI = () => {
             </div>
           </div>
 
+          {/* Rate limit status */}
+          {isLimited && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+              <AlertCircle className="w-4 h-4" />
+              Rate limit reached. Wait {Math.ceil(getTimeUntilReset() / 1000)}s
+            </div>
+          )}
+          
+          {!isLimited && remainingRequests < 5 && (
+            <div className="text-xs text-muted-foreground text-center">
+              {remainingRequests} analyses remaining
+            </div>
+          )}
+
           <Button 
             onClick={analyzeAndRecommend} 
-            disabled={analyzing}
+            disabled={analyzing || isLimited}
             className="w-full"
           >
             {analyzing ? (

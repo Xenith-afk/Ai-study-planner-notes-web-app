@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useRateLimit } from "@/hooks/useRateLimit";
 import { 
   Calendar, 
   Brain, 
@@ -14,7 +15,8 @@ import {
   CheckCircle2, 
   XCircle,
   RotateCcw,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from "lucide-react";
 
 interface ReviewItem {
@@ -44,6 +46,12 @@ export const SpacedRepetition = () => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [todaysDue, setTodaysDue] = useState<ReviewItem[]>([]);
   const [stats, setStats] = useState({ reviewed: 0, mastered: 0, streak: 0 });
+  
+  // Rate limit: 10 sessions per 5 minutes
+  const { isLimited, remainingRequests, recordRequest, getTimeUntilReset } = useRateLimit({
+    maxRequests: 10,
+    windowMs: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     loadReviewItems();
@@ -139,6 +147,12 @@ export const SpacedRepetition = () => {
   const startSession = () => {
     if (todaysDue.length === 0) {
       toast.info("No items due for review today!");
+      return;
+    }
+
+    if (!recordRequest()) {
+      const seconds = Math.ceil(getTimeUntilReset() / 1000);
+      toast.error(`Rate limit reached. Please wait ${seconds} seconds.`);
       return;
     }
 
@@ -425,12 +439,26 @@ export const SpacedRepetition = () => {
           )}
         </div>
 
+        {/* Rate limit status */}
+        {isLimited && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            <AlertCircle className="w-4 h-4" />
+            Rate limit reached. Wait {Math.ceil(getTimeUntilReset() / 1000)}s
+          </div>
+        )}
+        
+        {!isLimited && remainingRequests < 5 && (
+          <div className="text-xs text-muted-foreground text-center">
+            {remainingRequests} sessions remaining
+          </div>
+        )}
+
         {/* Start button */}
         <Button 
           className="w-full" 
           size="lg"
           onClick={startSession}
-          disabled={todaysDue.length === 0}
+          disabled={todaysDue.length === 0 || isLimited}
         >
           Start Review Session
           <ChevronRight className="w-4 h-4 ml-2" />
