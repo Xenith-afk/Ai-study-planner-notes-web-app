@@ -4,12 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Send, Brain, Sparkles, BookOpen, Zap, Baby, GraduationCap, Target, Calendar, FileQuestion, MessageSquare } from "lucide-react";
+import { Send, Brain, Sparkles, BookOpen, Zap, Baby, GraduationCap, Target, Calendar, FileQuestion, MessageSquare, Gauge } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AdaptiveLearningAI } from "@/components/AdaptiveLearningAI";
 import { AITutor } from "@/components/AITutor";
 import { SpacedRepetition } from "@/components/SpacedRepetition";
 import { MockExamTraining } from "@/components/MockExamTraining";
+import { RateLimitDashboard } from "@/components/RateLimitDashboard";
+import { useGlobalRateLimits } from "@/hooks/useGlobalRateLimits";
 
 type Message = { role: "user" | "assistant"; content: string };
 type Mode = "chat" | "notes" | "flashcards" | "summary" | "child" | "expert";
@@ -21,6 +23,7 @@ const AIRoom = () => {
   const [mode, setMode] = useState<Mode>("chat");
   const [activeTab, setActiveTab] = useState("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { usage } = useGlobalRateLimits();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -158,7 +161,7 @@ const AIRoom = () => {
       <div className="container mx-auto max-w-5xl">
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-[calc(100vh-2rem)]">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
+          <TabsList className="grid w-full grid-cols-6 mb-4">
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">Chat</span>
@@ -178,6 +181,10 @@ const AIRoom = () => {
             <TabsTrigger value="exam" className="flex items-center gap-2">
               <FileQuestion className="w-4 h-4" />
               <span className="hidden sm:inline">Exam</span>
+            </TabsTrigger>
+            <TabsTrigger value="limits" className="flex items-center gap-2">
+              <Gauge className="w-4 h-4" />
+              <span className="hidden sm:inline">Limits</span>
             </TabsTrigger>
           </TabsList>
 
@@ -335,6 +342,16 @@ const AIRoom = () => {
           {/* Mock Exam Tab */}
           <TabsContent value="exam" className="h-[calc(100%-60px)] mt-0">
             <MockExamTraining />
+          </TabsContent>
+
+          {/* Rate Limits Tab */}
+          <TabsContent value="limits" className="h-[calc(100%-60px)] mt-0 overflow-y-auto">
+            <RateLimitDashboard
+              tutorUsage={usage.tutor}
+              examUsage={usage.exam}
+              reviewUsage={usage.review}
+              adaptiveUsage={usage.adaptive}
+            />
           </TabsContent>
         </Tabs>
       </div>
